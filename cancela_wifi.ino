@@ -2,8 +2,8 @@
 #include <ESP8266WebServer.h>
 #include "Servo.h"
 
-const char* ssid = "Eduardo";
-const char* password = "seha_wifi";
+const char* ssid = "nome_wifi";
+const char* password = "senha_wifi";
 
 Servo servoD1;
 ESP8266WebServer server(80);
@@ -28,22 +28,38 @@ void setup() {
   Serial.print("Conectado a rede sem fio ");
   Serial.println(ssid);
 
-  server.on("/abrir", abrir);
-  server.on("/fechar", fechar);
+  server.on("/abrir",  HTTP_GET, abrir);
+  server.on("/fechar", HTTP_GET, fechar);
+  server.on("/status", HTTP_GET, status);
   server.begin();
-  Serial.println("Servidor iniciado");
 
-  Serial.print("IP para se conectar ao NodeMCU: ");
   Serial.print("http://");
   Serial.println(WiFi.localIP());
 }
 
-void abrir() {
-  servoD1.write(180);
+void status(){
+  String status = "fechada";
+  int angulo = servoD1.read();
+  if(angulo > 170){
+    status = "aberta";
+  }
+ server.send(200, "text/json", "{\"status\": \""+status+"\"}");
 }
 
-void fechar() {
-  servoD1.write(20);
+void abrir(){
+  for(int angulo = servoD1.read(); angulo<180; angulo+=1){
+    servoD1.write(angulo);
+    delay(250);
+  }
+  server.send(200, "text/json", "{\"status\": \"aberta com sucesso\"}");
+}
+
+void fechar(){
+  for(int angulo = servoD1.read(); angulo>20; angulo-=1){
+    servoD1.write(angulo);
+    delay(150);
+  }
+  server.send(200, "text/json", "{\"status\": \"fechada com sucesso\"}");
 }
 
 
